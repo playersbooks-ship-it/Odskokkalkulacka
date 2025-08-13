@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+
+<html lang="sk">
+<head>
+<meta charset="utf-8"/>
+<title>Výpočet odskoku vzduchotechniky</title>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<style>
+    :root{
+      --bg:#0f172a;        /* slate-900 */
+      --card:#111827;      /* gray-900 */
+      --panel:#1f2937;     /* gray-800 */
+      --muted:#374151;     /* gray-700 */
+      --input:#1f2937;
+      --border:#374151;
+      --text:#f9fafb;      /* gray-50 */
+      --label:#9ca3af;     /* gray-400 */
+      --accent:#3b82f6;    /* blue-500 */
+      --accent-2:#22d3ee;  /* cyan-400 */
+      --warn:#f59e0b;      /* amber-500 */
+      --danger:#ef4444;    /* red-500 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; padding:1rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+      background: radial-gradient(1200px 800px at 10% -10%, #0b1229 0%, var(--bg) 35%, #0b1229 100%);
+      color:var(--text);
+      display:flex; align-items:flex-start; justify-content:center;
+    }
+    .container{
+      width:100%; max-width: 860px;
+      background: linear-gradient(180deg, var(--card), #0b1022 120%);
+      border:1px solid #0b102233;
+      border-radius: 18px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    h1{
+      font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+      margin:0 0 1rem;
+      text-align:center;
+      color: var(--accent-2);
+      letter-spacing:.2px;
+    }
+    .sub{
+      text-align:center; color:var(--label); margin-bottom:1.25rem; font-size:.95rem
+    }
+    .grid{
+      display:grid; gap:12px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    }
+    .span-6{grid-column: span 6}
+    .span-12{grid-column: span 12}
+    @media (max-width:720px){
+      .span-6{grid-column: span 12}
+    }
+    label{
+      display:block; font-weight:600; color: var(--label); margin-bottom:6px; font-size:.95rem;
+    }
+    .row { display:grid; gap:10px; grid-template-columns: repeat(12, 1fr); }
+    .row .field{ grid-column: span 6; }
+    @media (max-width:640px){ .row .field{ grid-column: span 12 } }
+    input, select{
+      width:100%; border-radius: 10px; padding: 12px 12px;
+      background: var(--input); color: var(--text);
+      border:1px solid var(--border); font-size:1rem;
+      outline:none;
+    }
+    input:focus, select:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px #3b82f633; }
+    .inline { display:flex; gap:10px; align-items:center }
+    .muted{ color:var(--label) }
+    .unit { font-variant-numeric: tabular-nums; opacity:.9 }
+    .badge{
+      display:inline-block; padding:.2rem .5rem; border-radius:999px; border:1px solid var(--border); background:#0b1229; color:#e5e7eb; font-size:.75rem
+    }
+    .actions{
+      display:flex; flex-wrap:wrap; gap:8px; margin-top:10px
+    }
+    button{
+      border:none; border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:700;
+      color:white; background: var(--accent); transition: transform .05s ease, box-shadow .2s ease, background .2s ease;
+      box-shadow: 0 2px 8px rgba(59,130,246,.35);
+    }
+    button:hover{ transform: translateY(-1px) }
+    .btn-danger{ background: var(--danger) }
+    .btn-secondary{ background: #6b7280 }
+    .btn-outline{ background: transparent; color:#e5e7eb; border:1px solid var(--border) }
+    .output{
+      background: #0b1229;
+      border:1px dashed #3b82f6;
+      color:#e5e7eb;
+      padding:12px; border-radius:12px; text-align:center; font-weight:700;
+    }
+    .hint{ color:#a3a3a3; font-size:.86rem; margin-top:6px }
+    .kicker{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px }
+    .kicker .right{ font-size:.85rem; color:#9ca3af }
+    .divider{ height:1px; background:#ffffff12; margin:.5rem 0 1rem }
+    .sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0 }
+  
+    /* Bigger inline angle readout next to the slider */
+    #angle-inline{
+      font-size:1.2rem;
+      font-weight:800;
+      color: var(--accent);
+      margin-left:.6rem;
+      text-shadow: 0 0 6px rgba(59,130,246,.35);
+      min-width: 3.5ch;
+      text-align:right;
+    }
+    .angle-row{ display:flex; align-items:center; gap:10px }
+  
+    /* Canvas diagram */
+    #canvas-wrap{ position:relative; margin-top:16px }
+    #cnv{ width:100%; height:460px; background:#0b1229; border:1px solid var(--border); border-radius:12px; touch-action:none; display:block }
+    .c-ui{ position:absolute; top:10px; right:10px; display:flex; gap:8px }
+    .c-btn{ width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+            background:#111827; border:1px solid #2a3556; border-radius:8px; color:#e5e7eb; font-weight:800; font-size:18px; user-select:none }
+    .c-btn:active{ transform:scale(0.98) }
+  
+/* === Sketch palette & canvas === */
+:root{
+  --canvas:#ffffff;
+  --red:#ef4444; --red-fill:rgba(239,68,68,.12);
+  --green:#16a34a; --green-fill:rgba(34,197,94,.20);
+  --amber:#d97706; --amber-fill:rgba(250,204,21,.28);
+  --wall:#0a0a0a; --wall-edge:#9ca3af;
+  --dim:#475569; --dim-soft:#94a3b8;
+  --accent:#818cf8; --accent-ring:#c7d2fe;
+}
+#canvas-wrap{ position:relative; margin-top:16px }
+#cnv{ display:block; width:100%; height:480px; min-height:360px; background:var(--canvas) !important; border-radius:14px;
+      box-shadow:inset 0 0 0 1px rgba(2,6,23,.08),0 10px 30px rgba(2,6,23,.25); touch-action:none; position:relative; z-index:0; }
+.duct-watermark{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none; user-select:none;
+  font-weight:900;
+  font-size:clamp(36px,10vw,120px);
+  letter-spacing:.18em;
+  color:rgba(17,24,39,.55);
+  opacity:0.66;
+  z-index:5; /* above canvas */
+  text-transform:uppercase;
+  transform:rotate(-14deg);
+  -webkit-text-stroke: 3px rgba(255,255,255,.7);
+  text-shadow: 0 2px 10px rgba(0,0,0,.28);
+}
+
+
+/* === Language switcher (top-right) === */
+.lang-ui{
+  position:fixed; top:12px; right:12px; z-index:9999;
+  display:flex; gap:6px; background:rgba(2,6,23,.6);
+  border:1px solid rgba(148,163,184,.25); padding:6px; border-radius:12px;
+  backdrop-filter: blur(6px);
+}
+.lang-ui button{
+  appearance:none; border:none; cursor:pointer;
+  font-weight:800; font-size:12px; letter-spacing:.02em;
+  padding:6px 8px; border-radius:8px;
+  color:#e5e7eb; background:#0f172a; border:1px solid rgba(148,163,184,.3);
+}
+.lang-ui button:hover{ background:#1f2937 }
+.lang-ui button.active{ background:#3b82f6; border-color:#60a5fa; color:white; }
+
+
+/* === Knižnica nábehov kolena === */
+#elbowLib.card{ position:relative }
+#elbowLib .kicker{ display:flex; align-items:center; justify-content:space-between }
+.collapse-btn{
+  border:none; background:#0b1229; color:#e5e7eb; border:1px solid var(--border);
+  border-radius:10px; padding:6px 10px; font-weight:800; cursor:pointer;
+}
+.collapse-btn:hover{ background:#111827 }
+#elbowLib .grid-form{ display:grid; grid-template-columns: repeat(12, 1fr); gap:10px }
+#elbowLib .grid-form .field{ grid-column: span 6 }
+#elbowLib .grid-form .field input, #elbowLib .grid-form .field select{ width:100%; border-radius:10px; padding:10px 12px; background:var(--input); color:var(--text); border:1px solid var(--border) }
+#elbowLib .actions{ display:flex; gap:8px; margin-top:8px }
+#elbowLib .muted{ color:var(--label) }
+#elbowLib.collapsed .lib-body{ display:none }
+#elbowLib table{ width:100%; border-collapse:collapse; }
+#elbowLib th, #elbowLib td{ text-align:left; padding:8px 10px; border-bottom:1px solid rgba(148,163,184,.15); font-size:.95rem }
+#elbowLib tbody tr:hover{ background:rgba(148,163,184,.08) }
+#elbowLib .tag{ display:inline-block; padding:.1rem .5rem; border:1px solid var(--border); border-radius:999px; font-size:.75rem; color:#e5e7eb; background:#0b1229 }
+@media (max-width:720px){
+  #elbowLib .grid-form .field{ grid-column: span 12 }
+}
+
+
+/* === Segmented control === */
+.seg{ display:inline-flex; gap:6px; background:#0b1229; border:1px solid var(--border); padding:4px; border-radius:12px }
+.seg-btn{ appearance:none; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:800; color:#e5e7eb; background:#0f172a; border:1px solid rgba(148,163,184,.3) }
+.seg-btn.active{ background:#3b82f6; border-color:#60a5fa; color:#fff }
+#elbowLib h3{ font-size: .95rem; font-weight:700; color:#cbd5e1 }
+
+
+#cfgSection.collapsed .cfg-body{ display:none }
+
+/* Align 'Jednotky' select with fields */
+section#cfgSection .kicker .right{
+  display:flex; align-items:flex-end; gap:8px;
+}
+section#cfgSection .kicker .right label{ margin:0 6px 0 0; }
+section#cfgSection .kicker .right select#units{
+  height:44px; padding:10px 12px; border-radius:10px;
+  background: var(--input); color: var(--text); border:1px solid var(--border);
+}
+
+</style>
+</head>
+<body>
+<main class="container">
+<!-- Language switcher -->
+<div aria-label="Language switcher" class="lang-ui" id="lang-ui" role="group">
+<button data-lang="sk" title="Slovensky">SK</button>
+<button data-lang="en" title="English">EN</button>
+<button data-lang="de" title="Deutsch">DE</button>
+<button data-lang="fr" title="Français">FR</button>
+<button data-lang="it" title="Italiano">IT</button>
+</div>
+<h1>Výpočet odskoku vzduchotechniky</h1>
+<div class="sub">Rýchly prepočet dĺžky <b>medzikusu</b> a veľkosti <b>odskoku</b> pre dve kolená.</div>
+<section aria-labelledby="calc" class="card span-12">
+<div class="kicker">
+<div class="badge" id="calc">Vstupy</div>
+<div class="right"><span id="angle-read">Uhol kolena: 45°</span></div>
+</div>
+<div class="row">
+<div class="field">
+<label for="start">Začiatok od steny/stropu <span class="unit">(<span class="unit-label">cm</span>)</span></label>
+<input id="start" inputmode="decimal" type="number" value="0"/>
+</div>
+<div class="field">
+<label for="end">Koniec od steny/stropu <span class="unit">(<span class="unit-label">cm</span>)</span></label>
+<input id="end" inputmode="decimal" type="number" value="10"/>
+</div>
+</div>
+<div class="row">
+<div class="field">
+<label for="elbow">Nábeh kolena od stredu <span class="unit">(<span class="unit-label">cm</span>)</span></label>
+<input id="elbow" inputmode="decimal" type="number" value="5"/>
+<p class="hint">Polomer/„nábeh“ jedného kolena. Pre dve kolená sa počíta 2×.</p>
+</div>
+<div class="field">
+<label for="angle">Uhol kolena (1–89°)</label>
+<div class="angle-row">
+<input id="angle" list="snap" max="89" min="1" step="1" type="range" value="45"/>
+<span id="angle-inline">45°</span>
+</div>
+<datalist id="snap">
+<option value="15"></option>
+<option value="30"></option>
+<option value="45"></option>
+<option value="67"></option>
+</datalist>
+</div>
+</div>
+<div class="row">
+<div class="field">
+<label for="offset">Veľkosť odskoku <span class="unit">(<span class="unit-label">cm</span>)</span></label>
+<div class="inline">
+<input id="offset" inputmode="decimal" placeholder="vypočíta sa" type="number"/>
+<button class="btn-outline" id="btn-from-offset" title="Prepočítať medzikus z odskoku">Z odskoku</button>
+</div>
+</div>
+<div class="field">
+<label for="medzikus">Dĺžka medzikusu <span class="unit">(<span class="unit-label">cm</span>)</span></label>
+<div class="inline">
+<input id="medzikus" inputmode="decimal" placeholder="vypočíta sa" type="number"/>
+<button class="btn-outline" id="btn-from-medzikus" title="Prepočítať odskok z medzikusu">Z medzikusu</button>
+</div>
+</div>
+</div>
+<div class="actions">
+<button id="btn-calc">Prepočítať</button>
+<button class="btn-secondary" id="btn-clear">Vymazať vstupy</button>
+</div>
+<div aria-live="polite" class="output" id="output">Výsledky sa zobrazia tu.</div>
+</section>
+<section aria-labelledby="diagram" class="card span-12">
+<div class="kicker">
+<div class="badge" id="diagram">Nákres</div>
+<div class="right">Zoom + posúvanie • VO VÝVOJI</div>
+</div>
+<div id="canvas-wrap">
+<canvas id="cnv"></canvas>
+<div class="duct-watermark">VO VÝVOJI</div>
+</div>
+</section><section aria-labelledby="cfg" class="card span-12" id="cfgSection">
+<div class="kicker">
+<div class="badge" id="cfg">Nastavenia nákresu</div>
+
+<button aria-expanded="true" class="collapse-btn" id="cfgCollapseBtn">▾ Minimalizovať</button></div><div class="cfg-body"><div class="row"><div class="field"><label for="units">Jednotky</label><select id="units">
+<option value="mm">mm</option>
+<option selected="" value="cm">cm</option>
+</select></div></div><div class="row">
+<div class="field">
+<label for="orientation">Orientácia</label>
+<select id="orientation">
+<option value="wall">Pri stene</option>
+<option value="ceiling">Pri strope</option>
+</select>
+</div>
+</div><div class="divider"></div><div class="row">
+<div class="field" id="field-a">
+<label for="a">Šírka (šírka/priemer)</label>
+<input id="a" inputmode="decimal" type="number" value="50"/>
+</div>
+</div></div>
+</section>
+<section aria-labelledby="store" class="card span-12">
+<div class="kicker">
+<div class="badge" id="store">Uložené výpočty</div>
+</div>
+<div class="row">
+<div class="field">
+<label for="saveName">Názov výpočtu</label>
+<input id="saveName" placeholder="napr. Odskok 45°" type="text"/>
+</div>
+<div class="field actions" style="align-items:flex-end">
+<button id="save">💾 Uložiť</button>
+<button class="btn-danger" id="delete">🗑️ Vymazať vybraný</button>
+<button class="btn-outline" id="clearAll">🧹 Vymazať všetky</button>
+</div>
+</div>
+<div class="row">
+<div class="field span-12">
+<label for="loadSelect">📂 Načítať uložený výpočet</label>
+<select id="loadSelect">
+<option value="">-- vyber --</option>
+</select>
+</div>
+</div>
+</section>
+<div id="sketch-demo-props" style="display:none">
+<input id="top_offset_cm" type="number" value="30"/>
+<input id="bottom_offset_cm" type="number" value="5"/>
+<input id="width_cm" type="number" value="10"/>
+<input id="angle_deg" type="number" value="30"/>
+<input id="S_cm" type="number" value="3"/>
+<input id="topH_cm" type="number" value="30"/>
+<input id="botH_cm" type="number" value="30"/>
+<button id="randomBtn" type="button"></button>
+<button id="resetBtn" type="button"></button>
+</div>
+<section aria-labelledby="elbowLibLabel" class="card span-12" id="elbowLib">
+<div class="kicker">
+<div class="badge" id="elbowLibLabel">Knižnica nábehov</div>
+<button aria-expanded="true" class="collapse-btn" id="elbowCollapseBtn">▾ Minimalizovať</button>
+</div>
+<div class="lib-body">
+<div aria-label="Typ profilu" class="seg" role="tablist">
+<button aria-selected="true" class="seg-btn active" data-type="rect" role="tab">Kanál</button>
+<button aria-selected="false" class="seg-btn" data-type="round" role="tab">Rúra</button>
+</div>
+<div class="grid-form" style="margin-top:8px">
+<!-- Kanál fields -->
+<div class="field for-rect">
+<label for="libWidth">Šírka (cm)</label>
+<input id="libWidth" placeholder="napr. 50" step="0.1" type="number"/>
+</div>
+<div class="field for-rect">
+<label for="libHeight">Výška (cm)</label>
+<input id="libHeight" placeholder="napr. 25" step="0.1" type="number"/>
+</div>
+<!-- Rúra field -->
+<div class="field for-round" style="display:none">
+<label for="libDiameter">Priemer (cm)</label>
+<input id="libDiameter" placeholder="napr. 40" step="0.1" type="number"/>
+</div>
+<div class="field">
+<label for="libAngle">Uhol (°)</label>
+<input id="libAngle" placeholder="napr. 45" step="0.1" type="number"/>
+</div>
+<div class="field">
+<label for="libS">Nábeh S (cm)</label>
+<input id="libS" placeholder="napr. 5" step="0.1" type="number"/>
+</div>
+<div class="field for-rect">
+<label for="libPos">Pozícia</label>
+<select id="libPos">
+<option value="kratka">Krátka strana</option>
+<option value="dlha">Dlhá strana</option>
+</select>
+</div>
+<div class="field">
+<label for="libName">Názov (voliteľné)</label>
+<input id="libName" placeholder="napr. 50×25/45° krátka alebo Ø40/45°" type="text"/>
+</div>
+</div>
+<div class="actions">
+<button id="libSave">💾 Uložiť</button>
+<button class="btn-outline" id="libClear">🧹 Vymazať formulár</button>
+</div>
+<div class="divider"></div>
+<div class="kicker" style="margin-top:4px">
+<div class="badge">Uložené</div>
+<div class="right muted" id="libCount"></div>
+</div>
+<div class="row">
+<div class="field span-12">
+<h3 class="muted" style="margin:.3rem 0">Kanál (hranaté)</h3>
+<table aria-label="Zoznam uložených – kanál">
+<thead>
+<tr>
+<th>Názov</th>
+<th>Rozmer</th>
+<th>Uhol</th>
+<th>Pozícia</th>
+<th>Nábeh</th>
+<th>Dátum</th>
+<th>Akcie</th>
+</tr>
+</thead>
+<tbody id="elbowListRect"></tbody>
+</table>
+</div>
+</div>
+<div class="row">
+<div class="field span-12">
+<h3 class="muted" style="margin:.6rem 0 .3rem">Rúra (okrúhle)</h3>
+<table aria-label="Zoznam uložených – rúra">
+<thead>
+<tr>
+<th>Názov</th>
+<th>Priemer</th>
+<th>Uhol</th>
+<th>Nábeh</th>
+<th>Dátum</th>
+<th>Akcie</th>
+</tr>
+</thead>
+<tbody id="elbowListRound"></tbody>
+</table>
+</div>
+</div>
+<div class="muted" id="elbowDetail" style="margin-top:8px"></div>
+</div>
+</section>
+</main>
+<script>
+(function(){
+  const KEY = 'elbowLibraryV2';
+
+  // Migrate V1 (rect-only) if present
+  try{
+    const v1 = JSON.parse(localStorage.getItem('elbowLibraryV1')||'[]');
+    if(Array.isArray(v1) && v1.length){
+      const migrated = v1.map(it => ({ type:'rect', width:it.width, height:it.height, angle:it.angle, S:it.S, pos:it.pos, name:it.name, created:it.created }));
+      const v2 = JSON.parse(localStorage.getItem(KEY)||'[]');
+      localStorage.setItem(KEY, JSON.stringify([ ...migrated, ...v2 ]));
+      localStorage.removeItem('elbowLibraryV1');
+    }
+  }catch(e){}
+
+  function loadLib(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } }
+  function saveLib(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+  function nowStr(){
+    const d = new Date(), pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // UI helpers
+  function setType(type){
+    document.querySelectorAll('.seg-btn').forEach(b=>{
+      const on = b.dataset.type===type; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+    });
+    document.querySelectorAll('.for-rect').forEach(n=> n.style.display = (type==='rect'?'':'none'));
+    document.querySelectorAll('.for-round').forEach(n=> n.style.display = (type==='round'?'':'none'));
+    document.getElementById('elbowLib').dataset.type = type;
+  }
+
+  function clearForm(){
+    ['libWidth','libHeight','libDiameter','libAngle','libS','libName'].forEach(id=>{ const el=document.getElementById(id); if(el) el && (el.value=''); });
+    const posSel = document.getElementById('libPos'); if(posSel) posSel.value = 'kratka';
+  }
+
+  function renderList(){
+    const arr = loadLib();
+    const rect = []; const round = [];
+    arr.forEach((it, idx)=>{ (it.type==='round'?round:rect).push({...it, _idx: idx}); });
+
+    // Counts
+    const cnt = document.getElementById('libCount');
+    cnt.textContent = `${arr.length} položiek (Kanál: ${rect.length}, Rúra: ${round.length})`;
+
+    // Rect table
+    const tbR = document.getElementById('elbowListRect'); tbR.innerHTML='';
+    rect.forEach(it=>{
+      const name = it.name || `${it.width}×${it.height}/${it.angle}° ${it.pos||''}`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td>${it.width||'-'} × ${it.height||'-'} cm</td>
+        <td>${it.angle||'-'}°</td>
+        <td><span class="tag">${it.pos==='kratka'?'krátka':'dlhá'}</span></td>
+        <td>${it.S||'-'} cm</td>
+        <td>${it.created||''}</td>
+        <td>
+          <button data-act="show" data-idx="${it._idx}" class="btn-outline">Zobraziť</button>
+          <button data-act="delete" data-idx="${it._idx}" class="btn-danger">Vymazať</button>
+        </td>`;
+      tbR.appendChild(tr);
+    });
+
+    // Round table
+    const tbO = document.getElementById('elbowListRound'); tbO.innerHTML='';
+    round.forEach(it=>{
+      const name = it.name || `Ø${it.diameter}/${it.angle}°`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td>Ø ${it.diameter||'-'} cm</td>
+        <td>${it.angle||'-'}°</td>
+        <td>${it.S||'-'} cm</td>
+        <td>${it.created||''}</td>
+        <td>
+          <button data-act="show" data-idx="${it._idx}" class="btn-outline">Zobraziť</button>
+          <button data-act="delete" data-idx="${it._idx}" class="btn-danger">Vymazať</button>
+        </td>`;
+      tbO.appendChild(tr);
+    });
+  }
+
+  function onSave(){
+    const type = document.getElementById('elbowLib').dataset.type || 'rect';
+    const angle = parseFloat(document.getElementById('libAngle').value);
+    const S = parseFloat(document.getElementById('libS').value);
+    const name = (document.getElementById('libName').value||'').trim();
+
+    if(type==='rect'){
+      const width = parseFloat(document.getElementById('libWidth').value);
+      const height = parseFloat(document.getElementById('libHeight').value);
+      const pos = document.getElementById('libPos').value;
+      if([width,height,angle,S].some(v=>isNaN(v))){ alert('Doplň šírku, výšku, uhol a nábeh.'); return; }
+      const arr = loadLib();
+      arr.unshift({ type:'rect', width:+width, height:+height, angle:+angle, S:+S, pos, name, created: nowStr() });
+      if(arr.length>200) arr.length=200;
+      saveLib(arr);
+    } else {
+      const diameter = parseFloat(document.getElementById('libDiameter').value);
+      if([diameter,angle,S].some(v=>isNaN(v))){ alert('Doplň priemer, uhol a nábeh.'); return; }
+      const arr = loadLib();
+      arr.unshift({ type:'round', diameter:+diameter, angle:+angle, S:+S, name, created: nowStr() });
+      if(arr.length>200) arr.length=200;
+      saveLib(arr);
+    }
+    renderList();
+    clearForm();
+  }
+
+  function onListClick(e){
+    const btn = e.target.closest('button[data-act]');
+    if(!btn) return;
+    const idx = +btn.dataset.idx;
+    const arr = loadLib();
+    const it = arr[idx];
+    if(!it) return;
+
+    if(btn.dataset.act==='delete'){
+      if(confirm('Vymazať túto položku?')){
+        arr.splice(idx,1); saveLib(arr); renderList(); document.getElementById('elbowDetail').textContent='';
+      }
+      return;
+    }
+    if(btn.dataset.act==='show'){
+      const detail = document.getElementById('elbowDetail');
+      if(it.type==='rect'){
+        const posTxt = it.pos==='kratka'?'krátka':'dlhá';
+        detail.innerHTML = `
+          <div class="badge">Detail</div>
+          <div style="margin-top:6px">
+            <b>${it.name || '(bez názvu)'}</b><br>
+            Typ: Kanál • Rozmer: <b>${it.width} × ${it.height} cm</b><br>
+            Uhol: <b>${it.angle}°</b> • Pozícia: <b>${posTxt}</b> • Nábeh S: <b>${it.S} cm</b><br>
+            Uložené: ${it.created||''}
+          </div>`;
+      }else{
+        detail.innerHTML = `
+          <div class="badge">Detail</div>
+          <div style="margin-top:6px">
+            <b>${it.name || '(bez názvu)'}</b><br>
+            Typ: Rúra • Priemer: <b>Ø ${it.diameter} cm</b><br>
+            Uhol: <b>${it.angle}°</b> • Nábeh S: <b>${it.S} cm</b><br>
+            Uložené: ${it.created||''}
+          </div>`;
+      }
+    }
+  }
+
+  function wire(){
+    // Type switch
+    document.querySelectorAll('.seg-btn').forEach(b=> b.addEventListener('click', ()=> setType(b.dataset.type)));
+    setType('rect'); // default view
+
+    document.getElementById('libSave')?.addEventListener('click', onSave);
+    document.getElementById('libClear')?.addEventListener('click', clearForm);
+    document.getElementById('elbowListRect')?.addEventListener('click', onListClick);
+    document.getElementById('elbowListRound')?.addEventListener('click', onListClick);
+    renderList();
+
+    // Collapse
+    const sec = document.getElementById('elbowLib');
+    const btn = document.getElementById('elbowCollapseBtn');
+    btn?.addEventListener('click', ()=>{
+      const collapsed = sec.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '▸ Rozbaliť' : '▾ Minimalizovať';
+      btn.setAttribute('aria-expanded', String(!collapsed));
+    });
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', wire); } else { wire(); }
+})();
+</script>
+<script>
+
+(function(){
+  // ======== Core param model (v cm/deg) ========
+  const model = {
+    top_offset_cm: 30,
+    bottom_offset_cm: 5,
+    width_cm: 10,
+    angle_deg: 30,
+    S_cm: 3,
+    topH_cm: 30,
+    botH_cm: 30
+  };
+
+  const CM = 5; // 1 cm = 5 px
+  const cnv = document.getElementById('cnv'); const ctx = cnv.getContext('2d');
+// === View (zoom/pan) ===
+let VIEW = { k:1, tx:0, ty:0 };
+window.__DUCT_VIEW = VIEW;
+window.DuctSketchRedraw = ()=> render(model);
+  let animFrom = null, animTo = null, animStart = 0, animDur = 400;
+
+  // ======== Geometry helpers ========
+  function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+  function drawRect(r, fill, stroke, lw=2){
+    ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.rect(r.x,r.y,r.w,r.h); ctx.fill(); ctx.stroke();
+  }
+  function drawPoly(pts, fill, stroke, lw=2){
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.fill(); ctx.stroke();
+  }
+  function unit(vx,vy){ const l=Math.hypot(vx,vy)||1; return {x:vx/l, y:vy/l}; }
+  function leftNormal(dir){ return {x:-dir.y, y:dir.x}; }
+  function segQuad(a,b,halfW){
+    const vx=b.x-a.x, vy=b.y-a.y, len = Math.hypot(vx,vy) || 1;
+    const nx = -vy/len, ny = vx/len, hw = halfW;
+    return [
+      {x:a.x + nx*hw, y:a.y + ny*hw},
+      {x:a.x - nx*hw, y:a.y - ny*hw},
+      {x:b.x - nx*hw, y:b.y - ny*hw},
+      {x:b.x + nx*hw, y:b.y + ny*hw}
+    ];
+  }
+  function elbowTrapezoid(a, dirA, b, dirB, Wpx){
+    // Začiatková hrana ⟂ dirA, koncová ⟂ dirB — rohy vždy spojené
+    const nA = leftNormal(dirA), nB = leftNormal(dirB), hw = Wpx/2;
+    const aL = {x:a.x + nA.x*hw, y:a.y + nA.y*hw};
+    const aR = {x:a.x - nA.x*hw, y:a.y - nA.y*hw};
+    const bL = {x:b.x + nB.x*hw, y:b.y + nB.y*hw};
+    const bR = {x:b.x - nB.x*hw, y:b.y - nB.y*hw};
+    return [aL,aR,bR,bL];
+  }
+
+  // ======== Pretty dims ========
+  function drawFilledArrowhead(p, from, color){
+    const ang=Math.atan2(p.y-from.y,p.x-from.x), size=7;
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+    ctx.lineTo(p.x - size*Math.cos(ang - Math.PI/7), p.y - size*Math.sin(ang - Math.PI/7));
+    ctx.lineTo(p.x - size*Math.cos(ang + Math.PI/7), p.y - size*Math.sin(ang + Math.PI/7));
+    ctx.closePath();
+    ctx.fillStyle=color||'#475569'; ctx.fill();
+  }
+  function pillRotated(text, a, b, offset){
+  // Use current canvas transform so labels follow pan/zoom/rotation,
+  // but draw them upright (no rotation applied to text).
+  const M = ctx.getTransform(); // model px -> device px
+  const vx=b.x-a.x, vy=b.y-a.y, len=Math.hypot(vx,vy)||1;
+  const nx = -vy/len, ny = vx/len;
+  const mx=(a.x+b.x)/2 + nx*(offset||0), my=(a.y+b.y)/2 + ny*(offset||0);
+  const sx = M.a*mx + M.c*my + M.e;
+  const sy = M.b*mx + M.d*my + M.f;
+
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0); // device pixels
+  ctx.translate(sx, sy);
+  ctx.font='12px Inter,system-ui,Segoe UI,Roboto';
+  const padX=6,h=18,w=ctx.measureText(text).width+padX*2,x=-w/2,y=-h/2,r=9;
+  ctx.shadowColor='rgba(2,6,23,.25)'; ctx.shadowBlur=6; ctx.shadowOffsetY=3;
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath(); ctx.fillStyle='rgba(129,140,248,.16)'; ctx.strokeStyle='rgba(199,210,254,.9)'; ctx.lineWidth=1;
+  ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='#0f172a'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,0,0);
+  ctx.restore();
+}
+
+  // ======== Render ========
+  function render(p){
+    const rect = cnv.getBoundingClientRect(), dpr=Math.max(1,window.devicePixelRatio||1);
+    cnv.width = Math.round(rect.width*dpr); cnv.height=Math.round(rect.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+// Apply orientation rotate (90° right) for 'ceiling'
+if (window.__DUCT_ORIENT === 'ceiling') {
+  // rotate around left edge; width is rect.width
+  ctx.translate(rect.width, 0);
+  ctx.rotate(Math.PI/2);
+}
+
+// Apply zoom & pan
+ctx.translate(VIEW.tx, VIEW.ty);
+ctx.scale(VIEW.k, VIEW.k);
+const W=rect.width, H=rect.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Stena
+    const wallX = Math.floor(W*0.14);
+    ctx.lineCap='butt'; ctx.lineJoin='miter';
+    ctx.strokeStyle=getVar('--wall'); ctx.lineWidth=9; line(wallX-5,-2000,wallX-5,H+2000);
+    ctx.strokeStyle=getVar('--wall-edge'); ctx.lineWidth=2; line(wallX,-2000,wallX,H+2000);
+    ctx.strokeStyle='rgba(15,23,42,.75)'; ctx.lineWidth=4;
+    const hatchLen=34,hatchGap=58,hatchOff=8;
+    for(let y=-1000;y<H+2000;y+=hatchGap){ line(wallX-hatchOff,y,wallX-hatchOff-hatchLen,y+hatchLen*0.6); }
+
+    // Stredy podľa offset + W/2
+    const center_bottom_cm = p.bottom_offset_cm + p.width_cm/2;
+    const center_top_cm    = p.top_offset_cm    + p.width_cm/2;
+    const xBottom = wallX + center_bottom_cm*CM;
+    const xTop    = wallX + center_top_cm*CM;
+
+    // Rozmery v px
+    const Wpx = p.width_cm*CM, Htop=p.topH_cm*CM, Hbot=p.botH_cm*CM;
+    const midY=Math.floor(H/2), gap=44;
+    const topRect = { x:xTop-Wpx/2, y:midY-gap-Htop, w:Wpx, h:Htop };
+    const p0 = { x:xTop, y:topRect.y+topRect.h };
+
+    // Geometria kolien a medzikusu (rohy spojené)
+    const theta=p.angle_deg*Math.PI/180, sinA=Math.sin(theta), cosA=Math.cos(theta);
+    const offset_cm=Math.abs(center_top_cm-center_bottom_cm);
+    const L_cm = Math.max(0, (offset_cm/Math.sin(theta)) - 2*p.S_cm);
+    const S = p.S_cm*CM, L=L_cm*CM;
+    const sign = (xBottom < xTop) ? -1 : 1;
+    let p1 = { x:p0.x + sign*S*sinA, y:p0.y + S*cosA };
+    let p2 = { x:p1.x + sign*L*sinA, y:p1.y + L*cosA };
+    let p3 = { x:p2.x + sign*S*sinA, y:p2.y + S*cosA };
+    const botRect = { x:xBottom-Wpx/2, y:p3.y, w:Wpx, h:Hbot };
+// --- Non-overlap guard ---
+const minClear = 24;
+const desiredTopY = topRect.y + topRect.h + minClear;
+if (botRect.y < desiredTopY) {
+  const dy = desiredTopY - botRect.y;
+  p1 = { x:p1.x, y:p1.y + dy };
+  p2 = { x:p2.x, y:p2.y + dy };
+  p3 = { x:p3.x, y:p3.y + dy };
+  botRect.y += dy;
+}
+
+    // Kanály + diely
+    drawRect(topRect, getVar('--red-fill'), getVar('--red'), 2);
+    drawRect(botRect, getVar('--red-fill'), getVar('--red'), 2);
+    const dirDown={x:0,y:1}, dirAng=unit(sign*sinA,cosA);
+    drawPoly(elbowTrapezoid(p0,dirDown,p1,dirAng,Wpx), getVar('--amber-fill'), getVar('--amber'), 2);
+    drawPoly(segQuad(p1,p2,Wpx/2), getVar('--green-fill'), getVar('--green'), 2);
+    drawPoly(elbowTrapezoid(p2,dirAng,p3,dirDown,Wpx), getVar('--amber-fill'), getVar('--amber'), 2);
+    ctx.strokeStyle='rgba(15,23,42,.6)'; ctx.lineWidth=1;
+    line(p0.x,p0.y,p1.x,p1.y); line(p2.x,p2.y,p3.x,p3.y);
+    line(p0.x-Wpx/2,p0.y,p0.x+Wpx/2,p0.y); line(p3.x-Wpx/2,p3.y,p3.x+Wpx/2,p3.y);
+
+    // Kóty – začiatok/koniec
+    ctx.setLineDash([6,4]); ctx.strokeStyle=getVar('--dim-soft'); ctx.lineWidth=1;
+    const leftTop=topRect.x, leftBot=botRect.x;
+    const yTopDim=topRect.y-16, yBotDim=botRect.y+botRect.h+28;
+    line(wallX,yTopDim,leftTop,yTopDim); line(wallX,yBotDim,leftBot,yBotDim); ctx.setLineDash([]);
+    pillRotated(`${p.top_offset_cm.toFixed(1)} cm`, {x:leftTop,y:yTopDim}, {x:wallX,y:yTopDim}, 0);
+    pillRotated(`${p.bottom_offset_cm.toFixed(1)} cm`, {x:wallX,y:yBotDim}, {x:leftBot,y:yBotDim}, 0);
+
+    // Šírka kanála
+    const yWidth=topRect.y+topRect.h/2;
+    ctx.setLineDash([4,3]); ctx.strokeStyle=getVar('--dim-soft'); ctx.lineWidth=1;
+    line(topRect.x,yWidth,topRect.x+Wpx,yWidth); ctx.setLineDash([]);
+    pillRotated(`${p.width_cm.toFixed(1)} cm`, {x:topRect.x,y:yWidth},{x:topRect.x+Wpx,y:yWidth},0);
+
+    // Medzikus (otočené správne, vždy čitateľné)
+    pillRotated(`${L_cm.toFixed(1)} cm`, p2, p1, 20);
+
+    // Odskok (stred–stred) – horizontálny s bodkovanými čiarami na strede
+    const startCX=topRect.x+Wpx/2, endCX=botRect.x+Wpx/2;
+    const c1={x:startCX,y:topRect.y+topRect.h/2}, c2={x:endCX,y:botRect.y+botRect.h/2};
+    const yDim=Math.min(topRect.y,botRect.y)-42;
+    ctx.setLineDash([6,4]); ctx.strokeStyle=getVar('--dim-soft'); ctx.lineWidth=1;
+    line(startCX,yDim,endCX,yDim); ctx.setLineDash([]);
+    pillRotated(`${Math.abs(center_top_cm-center_bottom_cm).toFixed(1)} cm`, {x:endCX,y:yDim},{x:startCX,y:yDim},0);
+    ctx.setLineDash([3,4]); ctx.strokeStyle=getVar('--dim-soft'); ctx.lineWidth=1;
+    line(startCX,yDim,c1.x,c1.y); line(endCX,yDim,c2.x,c2.y); ctx.setLineDash([]);
+  }
+
+  // ======== Animation ========
+  function easeInOutQuad(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+  function animateTo(target){
+    animFrom = {...model}; animTo = {...target}; animStart = performance.now();
+    const step = (now)=>{
+      const t = Math.min(1,(now-animStart)/animDur), e=easeInOutQuad(t);
+      const cur = {};
+      for(const k in model){ cur[k] = animFrom[k] + (animTo[k]-animFrom[k])*e; }
+      render(cur);
+      if(t<1) requestAnimationFrame(step);
+      else { Object.assign(model, animTo); render(model); }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // ======== Wire demo inputs ========
+  const ids = ['top_offset_cm','bottom_offset_cm','width_cm','angle_deg','S_cm','topH_cm','botH_cm'];
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>{
+      const next = readParamsFromInputs();
+      animateTo(next);
+    });
+  });
+  document.getElementById('randomBtn').onclick = ()=>{
+    const rand = {
+      top_offset_cm: clamp(rng(20,60),0,200),
+      bottom_offset_cm: clamp(rng(2,30),0,200),
+      width_cm: clamp(rng(8,25),5,60),
+      angle_deg: clamp(rng(15,60),5,85),
+      S_cm: clamp(rng(2,8),0.5,50),
+      topH_cm: clamp(rng(20,60),5,200),
+      botH_cm: clamp(rng(20,60),5,200)
+    };
+    setInputs(rand); animateTo(rand);
+  };
+  document.getElementById('resetBtn').onclick = ()=>{ const base={...model}; setInputs(base); animateTo(base); };
+
+  function readParamsFromInputs(){
+    const obj={};
+    ids.forEach(id=> obj[id]=parseFloat(document.getElementById(id).value));
+    // basic guards
+    obj.width_cm = Math.max(0.1, obj.width_cm||10);
+    obj.angle_deg = Math.min(85, Math.max(1, obj.angle_deg||30));
+    obj.S_cm = Math.max(0, obj.S_cm||3);
+    obj.topH_cm = Math.max(1, obj.topH_cm||30);
+    obj.botH_cm = Math.max(1, obj.botH_cm||30);
+    return obj;
+  }
+  function setInputs(obj){ ids.forEach(id=>{ if(obj[id]!=null) document.getElementById(id).value = obj[id]; }); }
+  function rng(a,b){ return +(a + Math.random()*(b-a)).toFixed(1); }
+  function clamp(v,min,max){ return Math.min(max,Math.max(min,v)); }
+
+  // ======== Public wiring API for your calculator ========
+  window.DuctSketch = {
+    wireToCalculator({selectors}){
+      // selectors: map { top_offset_cm, bottom_offset_cm, width_cm, angle_deg, S_cm, topH_cm, botH_cm }
+      const read = ()=>{
+        const o={};
+        for(const k of Object.keys(model)){
+          const sel = selectors[k];
+          if(!sel) continue;
+          const el = document.querySelector(sel);
+          if(!el) continue;
+          o[k] = parseFloat(el.value || el.textContent);
+        }
+        // guards
+        o.width_cm = Math.max(0.1, o.width_cm||model.width_cm);
+        o.angle_deg = Math.min(85, Math.max(1, o.angle_deg||model.angle_deg));
+        o.S_cm = Math.max(0, o.S_cm||model.S_cm);
+        o.topH_cm = Math.max(1, o.topH_cm||model.topH_cm);
+        o.botH_cm = Math.max(1, o.botH_cm||model.botH_cm);
+        return o;
+      };
+      const push = ()=> animateTo(read());
+      // attach listeners
+      for(const k of Object.keys(model)){
+        const sel = selectors[k];
+        if(!sel) continue;
+        const el = document.querySelector(sel);
+        if(!el) continue;
+        el.addEventListener('input', push);
+        el.addEventListener('change', push);
+      }
+      // initial
+      animateTo(read());
+    }
+  };
+
+  // ======== Init ========
+  setInputs(model);
+  animateTo(model);
+  const ro=new ResizeObserver(()=> render(model)); ro.observe(cnv);
+})();
+
+</script>
+<script>
+(function(){
+  function currentWidth(){
+    const type = document.getElementById('pipeType')?.value || 'rect';
+    const raw = (type==='rect' ? document.getElementById('a')?.value : document.getElementById('a_rura')?.value) || 0;
+    return parseFloat(raw)||0;
+  }
+  function push(){
+    const t = document.getElementById('top_offset_cm');
+    const b = document.getElementById('bottom_offset_cm');
+    const w = document.getElementById('width_cm');
+    const a = document.getElementById('angle_deg');
+    const s = document.getElementById('S_cm');
+    t.value = document.getElementById('start')?.value || 0;
+    b.value = document.getElementById('end')?.value || 0;
+    w.value = currentWidth();
+    a.value = document.getElementById('angle')?.value || 30;
+    s.value = document.getElementById('elbow')?.value || 3;
+    [t,b,w,a,s].forEach(el=>{
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+      el.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+  }
+  ['start','end','elbow','a','a_rura','pipeType','angle'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.addEventListener('input', push); el.addEventListener('change', push); }
+  });
+  window.addEventListener('load', push);
+
+  // Gestures: wheel zoom + pointer pan/pinch
+  const cnv = document.getElementById('cnv');
+  const VIEW = window.__DUCT_VIEW || {k:1, tx:0, ty:0};
+  function clamp(v,min,max){ return Math.min(max, Math.max(min, v)); }
+  function redraw(){ if(window.DuctSketchRedraw) window.DuctSketchRedraw(); }
+
+  cnv.addEventListener('wheel', function(e){
+    e.preventDefault();
+    const rect = cnv.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const prevK = VIEW.k;
+    const factor = (e.deltaY<0) ? 1.1 : 0.9;
+    VIEW.k = clamp(VIEW.k * factor, 0.25, 6);
+    const wx = (x - VIEW.tx) / prevK;
+    const wy = (y - VIEW.ty) / prevK;
+    VIEW.tx = x - wx * VIEW.k;
+    VIEW.ty = y - wy * VIEW.k;
+    redraw();
+  }, {passive:false});
+
+  const pts = new Map();
+  let panLast = {x:0,y:0};
+  let start = null;
+
+  cnv.addEventListener('pointerdown', e=>{
+    cnv.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size===1){
+      panLast = {x:e.clientX, y:e.clientY};
+    } else if(pts.size===2){
+      const arr = Array.from(pts.values());
+      start = {
+        k: VIEW.k, tx: VIEW.tx, ty: VIEW.ty,
+        d: Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y),
+        c: { x:(arr[0].x+arr[1].x)/2, y:(arr[0].y+arr[1].y)/2 }
+      };
+    }
+  });
+
+  cnv.addEventListener('pointermove', e=>{
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size===1){
+      const dx = e.clientX - panLast.x;
+      const dy = e.clientY - panLast.y;
+      if (window.__DUCT_ORIENT === 'ceiling') {
+        // Compensate for 90° clockwise rotation so pan feels natural
+        VIEW.tx += dy;
+        VIEW.ty -= dx;
+      } else {
+        VIEW.tx += dx;
+        VIEW.ty += dy;
+      }
+      panLast = {x:e.clientX, y:e.clientY};
+      redraw();
+    } else if(pts.size===2 && start){
+      const arr = Array.from(pts.values());
+      const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y) || 1;
+      const c = { x:(arr[0].x+arr[1].x)/2, y:(arr[0].y+arr[1].y)/2 };
+      const k = clamp(start.k * (d / start.d), 0.25, 6);
+      const wx = (start.c.x - start.tx) / start.k;
+      const wy = (start.c.y - start.ty) / start.k;
+      VIEW.k = k;
+      VIEW.tx = c.x - wx * VIEW.k;
+      VIEW.ty = c.y - wy * VIEW.k;
+      redraw();
+    }
+  });
+
+  function endPointer(e){
+    pts.delete(e.pointerId);
+    if(pts.size<2) start=null;
+  }
+  cnv.addEventListener('pointerup', endPointer);
+  cnv.addEventListener('pointercancel', endPointer);
+  cnv.addEventListener('pointerleave', endPointer);
+})();
+</script>
+<script>
+(function(){
+  // --- Translations ---
+  const T = {
+    sk: {
+      title: "Výpočet odskoku vzduchotechniky",
+      sub: "Rýchly prepočet dĺžky <b>medzikusu</b> a veľkosti <b>odskoku</b> pre dve kolená.",
+      units: "Jednotky:",
+      badge_settings: "Nastavenia",
+      badge_inputs: "Vstupy",
+      badge_store: "Uložené výpočty",
+      badge_diagram: "Nákres",
+      watermark: "VO VÝVOJI",
+      pipeType: "Typ potrubia",
+      pipe_rect: "Kanál (hranaté)",
+      pipe_round:"Rúra (okrúhle)",
+      orientation: "Orientácia",
+      o_wall: "Pri stene",
+      o_ceiling: "Pri strope",
+      a: "Šírka kanála",
+      a_rura: "Priemer rúry",
+      start: "Začiatok od steny/stropu",
+      end: "Koniec od steny/stropu",
+      elbow: "Nábeh kolena od stredu",
+      elbow_hint: "Polomer/„nábeh“ jedného kolena. Pre dve kolená sa počíta 2×.",
+      angle: "Uhol kolena (1–89°)",
+      angle_read_prefix: "Uhol kolena: ",
+      offset: "Veľkosť odskoku",
+      medzikus: "Dĺžka medzikusu",
+      btn_from_offset: "Z odskoku",
+      btn_from_medzikus: "Z medzikusu",
+      btn_calc: "Prepočítať",
+      btn_clear: "Vymazať vstupy",
+      output_idle: "Výsledky sa zobrazia tu.",
+      saveName: "Názov výpočtu",
+      save: "💾 Uložiť",
+      delete: "🗑️ Vymazať vybraný",
+      clearAll: "🧹 Vymazať všetky",
+      loadSelect: "📂 Načítať uložený výpočet",
+      opt_choose: "-- vyber --",
+      lib_badge: "Knižnica nábehov",
+      lib_width: "Šírka (cm)",
+      lib_height:"Výška (cm)",
+      lib_angle: "Uhol (°)",
+      lib_pos: "Pozícia",
+      lib_pos_short: "Krátka strana",
+      lib_pos_long: "Dlhá strana",
+      lib_S: "Nábeh S (cm)",
+      lib_name: "Názov (voliteľné)",
+      lib_save: "💾 Uložiť",
+      lib_clear: "🧹 Vymazať formulár",
+      lib_saved_badge: "Uložené",
+      lib_rect_h: "Kanál (hranaté)",
+      lib_round_h: "Rúra (okrúhle)",
+      seg_rect: "Kanál",
+      seg_round: "Rúra",
+      action_show: "Zobraziť",
+      action_delete: "Vymazať",
+      ph: {
+        saveName: "napr. Odskok 45°",
+        offset: "vypočíta sa",
+        medzikus: "vypočíta sa",
+        libWidth: "napr. 50",
+        libHeight:"napr. 25",
+        libAngle: "napr. 45",
+        libDiameter:"napr. 40",
+        libS: "napr. 5",
+        libName: "napr. 50×25/45° krátka alebo Ø40/45°"
+      }
+    },
+    en: {
+      title: "Duct Offset Calculator",
+      sub: "Quick calculation of <b>spool length</b> and <b>offset</b> using two elbows.",
+      units: "Units:",
+      badge_settings: "Settings",
+      badge_inputs: "Inputs",
+      badge_store: "Saved calculations",
+      badge_diagram: "Sketch",
+      watermark: "IN DEVELOPMENT",
+      pipeType: "Duct type",
+      pipe_rect: "Duct (rectangular)",
+      pipe_round:"Pipe (round)",
+      orientation: "Orientation",
+      o_wall: "By wall",
+      o_ceiling: "By ceiling",
+      a: "Duct width",
+      a_rura: "Pipe diameter",
+      start: "Start distance from wall/ceiling",
+      end: "End distance from wall/ceiling",
+      elbow: "Elbow approach from center",
+      elbow_hint: "Radius/approach of one elbow. Counted twice for two elbows.",
+      angle: "Elbow angle (1–89°)",
+      angle_read_prefix: "Elbow angle: ",
+      offset: "Offset size",
+      medzikus: "Spool length",
+      btn_from_offset: "From offset",
+      btn_from_medzikus: "From spool",
+      btn_calc: "Calculate",
+      btn_clear: "Clear inputs",
+      output_idle: "Results will appear here.",
+      saveName: "Calculation name",
+      save: "💾 Save",
+      delete: "🗑️ Delete selected",
+      clearAll: "🧹 Clear all",
+      loadSelect: "📂 Load saved calculation",
+      opt_choose: "-- choose --",
+      lib_badge: "Run library",
+      lib_width: "Width (cm)",
+      lib_height:"Height (cm)",
+      lib_angle: "Angle (°)",
+      lib_pos: "Position",
+      lib_pos_short: "Short side",
+      lib_pos_long: "Long side",
+      lib_S: "Run S (cm)",
+      lib_name: "Name (optional)",
+      lib_save: "💾 Save",
+      lib_clear: "🧹 Clear form",
+      lib_saved_badge: "Saved",
+      lib_rect_h: "Duct (rectangular)",
+      lib_round_h: "Pipe (round)",
+      seg_rect: "Duct",
+      seg_round: "Pipe",
+      action_show: "Show",
+      action_delete: "Delete",
+      ph: {
+        saveName: "e.g. Offset 45°",
+        offset: "auto‑calculated",
+        medzikus: "auto‑calculated",
+        libWidth: "e.g. 50",
+        libHeight:"e.g. 25",
+        libAngle: "e.g. 45",
+        libDiameter:"e.g. 40",
+        libS: "e.g. 5",
+        libName: "e.g. 50×25/45° short or Ø40/45°"
+      }
+    },
+    de: {
+      title: "Luftkanal‑Versatzrechner",
+      sub: "Schnelle Berechnung von <b>Zwischenstück</b> und <b>Versatz</b> mit zwei Bögen.",
+      units: "Einheiten:",
+      badge_settings: "Einstellungen",
+      badge_inputs: "Eingaben",
+      badge_store: "Gespeicherte Berechnungen",
+      badge_diagram: "Skizze",
+      watermark: "IN ENTWICKLUNG",
+      pipeType: "Leitungstyp",
+      pipe_rect: "Kanal (rechteckig)",
+      pipe_round:"Rohr (rund)",
+      orientation: "Ausrichtung",
+      o_wall: "An der Wand",
+      o_ceiling: "An der Decke",
+      a: "Kanalkante / Breite",
+      a_rura: "Rohrdurchmesser",
+      start: "Startabstand von Wand/Decke",
+      end: "Endabstand von Wand/Decke",
+      elbow: "Bogen‑Ansatz vom Mittelpunkt",
+      elbow_hint: "Radius/Ansatz eines Bogens. Bei zwei Bögen 2×.",
+      angle: "Bogenwinkel (1–89°)",
+      angle_read_prefix: "Bogenwinkel: ",
+      offset: "Versatz",
+      medzikus: "Zwischenstück",
+      btn_from_offset: "Aus Versatz",
+      btn_from_medzikus: "Aus Zwischenstück",
+      btn_calc: "Berechnen",
+      btn_clear: "Eingaben löschen",
+      output_idle: "Ergebnisse erscheinen hier.",
+      saveName: "Berechnungsname",
+      save: "💾 Speichern",
+      delete: "🗑️ Ausgewählte löschen",
+      clearAll: "🧹 Alle löschen",
+      loadSelect: "📂 Gespeicherte laden",
+      opt_choose: "-- wählen --",
+      lib_badge: "Anlauf‑Bibliothek",
+      lib_width: "Breite (cm)",
+      lib_height:"Höhe (cm)",
+      lib_angle: "Winkel (°)",
+      lib_pos: "Position",
+      lib_pos_short: "Kurze Seite",
+      lib_pos_long: "Lange Seite",
+      lib_S: "Anlauf S (cm)",
+      lib_name: "Name (optional)",
+      lib_save: "💾 Speichern",
+      lib_clear: "🧹 Formular leeren",
+      lib_saved_badge: "Gespeichert",
+      lib_rect_h: "Kanal (rechteckig)",
+      lib_round_h: "Rohr (rund)",
+      seg_rect: "Kanal",
+      seg_round: "Rohr",
+      action_show: "Anzeigen",
+      action_delete: "Löschen",
+      ph: {
+        saveName: "z. B. Versatz 45°",
+        offset: "wird berechnet",
+        medzikus: "wird berechnet",
+        libWidth: "z. B. 50",
+        libHeight:"z. B. 25",
+        libAngle: "z. B. 45",
+        libDiameter:"z. B. 40",
+        libS: "z. B. 5",
+        libName: "z. B. 50×25/45° kurz oder Ø40/45°"
+      }
+    },
+    fr: {
+      title: "Calculateur de décalage de gaine",
+      sub: "Calcul rapide de la <b>longueur d'entretoise</b> et du <b>décalage</b> avec deux coudes.",
+      units: "Unités :",
+      badge_settings: "Paramètres",
+      badge_inputs: "Entrées",
+      badge_store: "Calculs enregistrés",
+      badge_diagram: "Croquis",
+      watermark: "EN DÉVELOPPEMENT",
+      pipeType: "Type de conduit",
+      pipe_rect: "Conduit (rectangulaire)",
+      pipe_round:"Tuyau (rond)",
+      orientation: "Orientation",
+      o_wall: "Au mur",
+      o_ceiling: "Au plafond",
+      a: "Largeur du conduit",
+      a_rura: "Diamètre du tuyau",
+      start: "Départ depuis mur/plafond",
+      end: "Arrivée depuis mur/plafond",
+      elbow: "Approche du coude depuis le centre",
+      elbow_hint: "Rayon/approche d’un coude. Compté 2× pour deux coudes.",
+      angle: "Angle du coude (1–89°)",
+      angle_read_prefix: "Angle du coude : ",
+      offset: "Décalage",
+      medzikus: "Entretoise",
+      btn_from_offset: "Depuis décalage",
+      btn_from_medzikus: "Depuis entretoise",
+      btn_calc: "Calculer",
+      btn_clear: "Effacer",
+      output_idle: "Les résultats s’affichent ici.",
+      saveName: "Nom du calcul",
+      save: "💾 Enregistrer",
+      delete: "🗑️ Supprimer sélection",
+      clearAll: "🧹 Tout effacer",
+      loadSelect: "📂 Charger un calcul",
+      opt_choose: "-- choisir --",
+      lib_badge: "Bibliothèque d’approches",
+      lib_width: "Largeur (cm)",
+      lib_height:"Hauteur (cm)",
+      lib_angle: "Angle (°)",
+      lib_pos: "Position",
+      lib_pos_short: "Côté court",
+      lib_pos_long: "Côté long",
+      lib_S: "Approche S (cm)",
+      lib_name: "Nom (optionnel)",
+      lib_save: "💾 Enregistrer",
+      lib_clear: "🧹 Effacer le formulaire",
+      lib_saved_badge: "Enregistrés",
+      lib_rect_h: "Conduit (rectangulaire)",
+      lib_round_h: "Tuyau (rond)",
+      seg_rect: "Conduit",
+      seg_round: "Tuyau",
+      action_show: "Afficher",
+      action_delete: "Supprimer",
+      ph: {
+        saveName: "ex. Décalage 45°",
+        offset: "calculé automatiquement",
+        medzikus: "calculé automatiquement",
+        libWidth: "ex. 50",
+        libHeight:"ex. 25",
+        libAngle: "ex. 45",
+        libDiameter:"ex. 40",
+        libS: "ex. 5",
+        libName: "ex. 50×25/45° court ou Ø40/45°"
+      }
+    },
+    it: {
+      title: "Calcolatore di scostamento canale",
+      sub: "Calcolo rapido di <b>lunghezza del pezzo</b> e <b>scostamento</b> con due curve.",
+      units: "Unità:",
+      badge_settings: "Impostazioni",
+      badge_inputs: "Input",
+      badge_store: "Calcoli salvati",
+      badge_diagram: "Schizzo",
+      watermark: "IN SVILUPPO",
+      pipeType: "Tipo di condotto",
+      pipe_rect: "Canale (rettangolare)",
+      pipe_round:"Tubo (rotondo)",
+      orientation: "Orientamento",
+      o_wall: "A parete",
+      o_ceiling: "A soffitto",
+      a: "Larghezza canale",
+      a_rura: "Diametro tubo",
+      start: "Inizio da parete/soffitto",
+      end: "Fine da parete/soffitto",
+      elbow: "Approccio curva dal centro",
+      elbow_hint: "Raggio/approccio di una curva. Con due curve è 2×.",
+      angle: "Angolo della curva (1–89°)",
+      angle_read_prefix: "Angolo curva: ",
+      offset: "Scostamento",
+      medzikus: "Pezzo intermedio",
+      btn_from_offset: "Da scostamento",
+      btn_from_medzikus: "Da pezzo",
+      btn_calc: "Calcola",
+      btn_clear: "Pulisci input",
+      output_idle: "I risultati appariranno qui.",
+      saveName: "Nome calcolo",
+      save: "💾 Salva",
+      delete: "🗑️ Elimina selezionato",
+      clearAll: "🧹 Elimina tutto",
+      loadSelect: "📂 Carica calcolo",
+      opt_choose: "-- scegli --",
+      lib_badge: "Libreria approcci",
+      lib_width: "Larghezza (cm)",
+      lib_height:"Altezza (cm)",
+      lib_angle: "Angolo (°)",
+      lib_pos: "Posizione",
+      lib_pos_short: "Lato corto",
+      lib_pos_long: "Lato lungo",
+      lib_S: "Approccio S (cm)",
+      lib_name: "Nome (facoltativo)",
+      lib_save: "💾 Salva",
+      lib_clear: "🧹 Pulisci",
+      lib_saved_badge: "Salvati",
+      lib_rect_h: "Canale (rettangolare)",
+      lib_round_h: "Tubo (rotondo)",
+      seg_rect: "Canale",
+      seg_round: "Tubo",
+      action_show: "Mostra",
+      action_delete: "Elimina",
+      ph: {
+        saveName: "es. Scostamento 45°",
+        offset: "calcolato automaticamente",
+        medzikus: "calcolato automaticamente",
+        libWidth: "es. 50",
+        libHeight:"es. 25",
+        libAngle: "es. 45",
+        libDiameter:"es. 40",
+        libS: "es. 5",
+        libName: "es. 50×25/45° corto oppure Ø40/45°"
+      }
+    }
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+
+  function setLabelWithUnit(forId, text){
+    const lab = document.querySelector('label[for="'+forId+'"]');
+    if(!lab) return;
+    const unit = lab.querySelector('.unit');
+    if(unit){
+      lab.innerHTML = text + ' ' + unit.outerHTML;
+    }else{
+      lab.textContent = text;
+    }
+  }
+
+  function setPh(sel, text){
+    const el = document.querySelector(sel);
+    if(!el) return;
+    // don't touch user-entered value; just set placeholder
+    el.setAttribute('placeholder', text);
+  }
+
+  function applyLang(lang){
+    const t = T[lang] || T.sk;
+    window.__ductLang = lang;
+    window.__ductGetPrefix = (l)=> (T[l]||T.sk).angle_read_prefix;
+
+    // Title + subtitle
+    const h1 = $('h1'); if(h1) h1.textContent = t.title;
+    const sub = document.querySelector('.sub'); if(sub) sub.innerHTML = t.sub;
+
+    // Badges
+    const b1 = $('#cfg'); if(b1) b1.textContent = t.badge_settings;
+    const b2 = $('#calc'); if(b2) b2.textContent = t.badge_inputs;
+    const b3 = $('#store'); if(b3) b3.textContent = t.badge_store;
+    const b4 = $('#diagram'); if(b4) b4.textContent = t.badge_diagram;
+    const bLib = $('#elbowLibLabel'); if(bLib) bLib.textContent = t.lib_badge;
+
+    // Watermark
+    const wm = document.querySelector('.duct-watermark'); if(wm) wm.textContent = t.watermark;
+
+    // Units
+    const right = document.querySelector('section[aria-labelledby="cfg"] .right');
+    if(right){ right.childNodes[0].nodeValue = t.units + ' '; }
+
+    // Labels (main form)
+    const map = [
+      ['pipeType', t.pipeType],
+      ['orientation', t.orientation],
+      ['a', t.a],
+      ['a_rura', t.a_rura],
+      ['start', t.start],
+      ['end', t.end],
+      ['elbow', t.elbow],
+      ['angle', t.angle],
+      ['offset', t.offset],
+      ['medzikus', t.medzikus],
+      ['saveName', t.saveName],
+      ['loadSelect', t.loadSelect]
+    ];
+    map.forEach(([id, text])=>{
+      if(['a','a_rura','start','end','elbow','offset','medzikus'].includes(id)){
+        setLabelWithUnit(id, text);
+      }else{
+        const lab = document.querySelector('label[for="'+id+'"]');
+        if(lab) lab.textContent = text;
+      }
+    });
+
+    // Elbow hint
+    const hint = document.querySelector('#elbow')?.parentElement?.querySelector('.hint');
+    if(hint) hint.textContent = t.elbow_hint;
+
+    // Angle readouts
+    const v = $('#angle')?.value || 45;
+    const ar = $('#angle-read'); if(ar) ar.textContent = t.angle_read_prefix + v + '°';
+    const inl = $('#angle-inline'); if(inl) inl.textContent = v + '°';
+
+    // Buttons
+    const btns = [
+      ['#btn-from-offset', 'btn_from_offset'],
+      ['#btn-from-medzikus', 'btn_from_medzikus'],
+      ['#btn-calc', 'btn_calc'],
+      ['#btn-clear', 'btn_clear'],
+      ['#save', 'save'],
+      ['#delete', 'delete'],
+      ['#clearAll', 'clearAll']
+    ];
+    btns.forEach(([sel,key])=>{ const el = $(sel); if(el) el.textContent = t[key]; });
+
+    // Select options
+    const pipe = $('#pipeType');
+    if(pipe){
+      const optRect = pipe.querySelector('option[value="rect"]');
+      const optRound = pipe.querySelector('option[value="round"]');
+      if(optRect) optRect.textContent = t.pipe_rect;
+      if(optRound) optRound.textContent = t.pipe_round;
+    }
+    const ori = $('#orientation');
+    if(ori){
+      const oWall = ori.querySelector('option[value="wall"]');
+      const oCeil = ori.querySelector('option[value="ceiling"]');
+      if(oWall) oWall.textContent = t.o_wall;
+      if(oCeil) oCeil.textContent = t.o_ceiling;
+    }
+    // Saved dropdown placeholder
+    const load = $('#loadSelect');
+    if(load){
+      const first = load.querySelector('option[value=""]');
+      if(first) first.textContent = t.opt_choose;
+    }
+
+    // === Library labels ===
+    function setText(sel, text){ const el=$(sel); if(el) el.textContent=text; }
+    setText('label[for="libWidth"]', t.lib_width);
+    setText('label[for="libHeight"]', t.lib_height);
+    const diamMap = { sk:"Priemer (cm)", en:"Diameter (cm)", de:"Durchmesser (cm)", fr:"Diamètre (cm)", it:"Diametro (cm)" };
+    setText('label[for="libDiameter"]', diamMap[lang] || diamMap.sk);
+    setText('label[for="libAngle"]', t.lib_angle);
+    setText('label[for="libS"]', t.lib_S);
+    setText('label[for="libPos"]', t.lib_pos);
+    const pos = $('#libPos');
+    if(pos){
+      const o1 = pos.querySelector('option[value="kratka"]');
+      const o2 = pos.querySelector('option[value="dlha"]');
+      if(o1) o1.textContent = t.lib_pos_short;
+      if(o2) o2.textContent = t.lib_pos_long;
+    }
+    setText('label[for="libName"]', t.lib_name);
+    setText('#libSave', t.lib_save);
+    setText('#libClear', t.lib_clear);
+    const rectH = document.querySelector('#elbowLib h3:nth-of-type(1)'); if(rectH) rectH.textContent = t.lib_rect_h;
+    const roundH = document.querySelector('#elbowLib h3:nth-of-type(2)'); if(roundH) roundH.textContent = t.lib_round_h;
+    const segRect = document.querySelector('.seg-btn[data-type="rect"]'); if(segRect) segRect.textContent = t.seg_rect;
+    const segRound = document.querySelector('.seg-btn[data-type="round"]'); if(segRound) segRound.textContent = t.seg_round;
+
+    // === Placeholders (do NOT change values) ===
+    setPh('#saveName', t.ph.saveName);
+    setPh('#offset', t.ph.offset);
+    setPh('#medzikus', t.ph.medzikus);
+    setPh('#libWidth', t.ph.libWidth);
+    setPh('#libHeight', t.ph.libHeight);
+    setPh('#libAngle', t.ph.libAngle);
+    setPh('#libDiameter', t.ph.libDiameter);
+    setPh('#libS', t.ph.libS);
+    setPh('#libName', t.ph.libName);
+
+    // Output idle
+    const out = $('#output');
+    if(out && out.textContent.trim().length < 5){
+      out.textContent = t.output_idle;
+    }
+  }
+
+  // --- Language UI logic ---
+  const ui = document.getElementById('lang-ui');
+  function setActive(lang){
+    ui?.querySelectorAll('button').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
+  }
+  function choose(lang){
+    localStorage.setItem('ductLang', lang);
+    applyLang(lang);
+    setActive(lang);
+  }
+  ui?.addEventListener('click', (e)=>{
+    const b = e.target.closest('button[data-lang]');
+    if(!b) return;
+    choose(b.dataset.lang);
+  });
+
+  // Initial language: from storage or browser, default sk
+  const stored = localStorage.getItem('ductLang');
+  let init = stored || (navigator.language||'sk').slice(0,2).toLowerCase();
+  if(!T[init]) init = 'sk';
+  applyLang(init);
+  setActive(init);
+})();
+</script>
+<script>
+(function(){
+  function updateAnglePrefixOnInput(){
+    const ang = document.getElementById('angle');
+    const read = document.getElementById('angle-read');
+    const inline = document.getElementById('angle-inline');
+    if(!ang || !read) return;
+    ang.addEventListener('input', function(){
+      const lang = window.__ductLang || 'sk';
+      const pref = (window.__ductGetPrefix ? window.__ductGetPrefix(lang) : 'Uhol kolena: ');
+      const v = (ang.value||0) + '°';
+      read.textContent = pref + v;
+      if(inline) inline.textContent = v;
+    });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', updateAnglePrefixOnInput);
+  }else{
+    updateAnglePrefixOnInput();
+  }
+})();
+</script>
+<script>
+// ==== Auto-calculation engine for the calculator ====
+(function(){
+  const unitsSel = document.getElementById('units');
+  const angleRange = document.getElementById('angle');
+  const angleInline = document.getElementById('angle-inline');
+  const angleRead = document.getElementById('angle-read');
+  const output = document.getElementById('output');
+
+  function toMM(v){
+    const units = unitsSel ? unitsSel.value : 'cm';
+    const n = Number(v)||0;
+    return (units==='cm') ? n*10 : n;
+  }
+  function fromMM(mm){
+    const units = unitsSel ? unitsSel.value : 'cm';
+    return (units==='cm') ? Math.round((mm/10)*10)/10 : Math.round(mm*10)/10;
+  }
+  function updateUnitBadges(){
+    document.querySelectorAll('.unit-label').forEach(n => n.textContent = unitsSel.value);
+  }
+  function convertAllOnUnitSwitch(){
+    const units = unitsSel.value;
+    const multiplier = units==='cm' ? 0.1 : 10; // switching target multiplier
+    ['start','end','elbow','offset','medzikus','a','a_rura'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el && el.value !== ''){
+        const v = Number(el.value);
+        if(!isNaN(v)) el.value = Math.round((v*multiplier)*10)/10;
+      }
+    });
+    updateUnitBadges();
+    doCalc();
+  }
+
+  function readNum(id){
+    const el = document.getElementById(id);
+    return el ? (Number(el.value)||0) : 0;
+  }
+  function setVal(id, v){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const old = el.value;
+    el.value = v;
+    // don't spam events; only fire if changed
+    if(String(old) !== String(v)){
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+      el.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+  }
+
+  function doCalc(){
+    const startMM = toMM(readNum('start'));
+    const endMM   = toMM(readNum('end'));
+    const elbowMM = toMM(readNum('elbow'));
+    const angle   = Number(angleRange?.value)||0;
+    if(!(angle>0 && angle<90)){
+      output && (output.textContent = 'Uhol musí byť v rozsahu 1° až 89°.');
+      return;
+    }
+    const rad = angle * Math.PI/180;
+    const offsetMM = Math.abs(endMM - startMM);
+    let medzikusMM = (offsetMM/Math.sin(rad)) - 2*elbowMM;
+    if(!isFinite(medzikusMM) || medzikusMM<0) medzikusMM = 0;
+
+    setVal('offset', fromMM(offsetMM));
+    setVal('medzikus', fromMM(medzikusMM));
+
+    if(output){
+      const u = unitsSel ? unitsSel.value : 'cm';
+      output.textContent = 'Medzikus: ' + fromMM(medzikusMM) + ' ' + u + ' • Odskok: ' + fromMM(offsetMM) + ' ' + u;
+    }
+  }
+
+  function calcFromMedzikus(){
+    const medzikusMM = toMM(readNum('medzikus'));
+    const elbowMM = toMM(readNum('elbow'));
+    const angle = Number(angleRange?.value)||0;
+    if(!(angle>0 && angle<90)){ output && (output.textContent = 'Uhol musí byť 1–89°.'); return; }
+    const rad = angle * Math.PI/180;
+    const offsetMM = (medzikusMM + 2*elbowMM) * Math.sin(rad);
+    setVal('offset', fromMM(offsetMM));
+    const startMM = toMM(readNum('start'));
+    setVal('end', fromMM(startMM + offsetMM));
+    doCalc();
+  }
+
+  function calcFromOffset(){
+    const offsetMM = toMM(readNum('offset'));
+    const elbowMM = toMM(readNum('elbow'));
+    const angle = Number(angleRange?.value)||0;
+    if(!(angle>0 && angle<90)){ output && (output.textContent = 'Uhol musí byť 1–89°.'); return; }
+    const rad = angle * Math.PI/180;
+    let medzikusMM = (offsetMM/Math.sin(rad)) - 2*elbowMM;
+    if(!isFinite(medzikusMM) || medzikusMM<0) medzikusMM = 0;
+    setVal('medzikus', fromMM(medzikusMM));
+    const startMM = toMM(readNum('start'));
+    setVal('end', fromMM(startMM + offsetMM));
+    doCalc();
+  }
+
+  function clearInputs(){
+    ['start','end','elbow','medzikus','offset','a','a_rura'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    doCalc();
+  }
+
+  function onAngleInput(){
+    const v = (angleRange?.value || '0') + '°';
+    if(angleInline) angleInline.textContent = v;
+    if(angleRead) angleRead.textContent = (angleRead.dataset.prefix || 'Uhol kolena: ') + (angleRange?.value || '0') + '°';
+    doCalc();
+  }
+
+  function onPipeChange(){
+    // when switching type, keep width consistent in results; DuctSketch proxy already hooked elsewhere
+    doCalc();
+  }
+
+  function wire(){
+    // buttons
+    document.getElementById('btn-calc')?.addEventListener('click', doCalc);
+    document.getElementById('btn-clear')?.addEventListener('click', clearInputs);
+    document.getElementById('btn-from-medzikus')?.addEventListener('click', calcFromMedzikus);
+    document.getElementById('btn-from-offset')?.addEventListener('click', calcFromOffset);
+    // live inputs
+    ['start','end','elbow','a','a_rura'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){ el.addEventListener('input', doCalc); el.addEventListener('change', doCalc); }
+    });
+    document.getElementById('pipeType')?.addEventListener('change', onPipeChange);
+    if(unitsSel){ unitsSel.addEventListener('change', convertAllOnUnitSwitch); updateUnitBadges(); }
+    if(angleRange){ angleRange.addEventListener('input', onAngleInput); onAngleInput(); }
+    // first draw
+    doCalc();
+  }
+
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', wire); } else { wire(); }
+})();
+</script>
+<script>
+(function(){
+  const sec = document.getElementById('cfgSection');
+  const btn = document.getElementById('cfgCollapseBtn');
+  if(btn && sec){
+    btn.addEventListener('click', ()=>{
+      const c = sec.classList.toggle('collapsed');
+      btn.textContent = c ? '▸ Rozbaliť' : '▾ Minimalizovať';
+      btn.setAttribute('aria-expanded', String(!c));
+    });
+  }
+})();
+</script>
+<script>
+(function(){
+  function setOrient(){
+    const val = (document.getElementById('orientation')?.value)||'wall';
+    window.__DUCT_ORIENT = (val === 'ceiling') ? 'ceiling' : 'wall';
+    if(window.DuctSketchRedraw) window.DuctSketchRedraw();
+  }
+  const sel = document.getElementById('orientation');
+  if(sel){
+    sel.addEventListener('change', setOrient);
+    sel.addEventListener('input', setOrient);
+    setTimeout(setOrient, 0);
+  }
+})();
+</script>
+
+<!-- Coffee button -->
+<button id="tttFab" style="position:fixed;bottom:10px;right:10px;z-index:999;background:#6b7280;color:#fff;border:none;border-radius:9999px;padding:6px 10px;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,0.2);opacity:0.15;transition:opacity 0.2s;">☕</button>
+
+<!-- Tic Tac Toe Modal -->
+<div id="tttContainer" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;color:#fff;font-family:system-ui,Arial,sans-serif;">
+  <div id="tttPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92vw,420px);background:#0f172a;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.5);padding:16px;">
+    <div id="tttHeader" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;font-size:20px;">Tic Tac Toe</h2>
+      <button id="tttClose" style="background:#ef4444;border:0;color:#fff;border-radius:10px;padding:8px 12px;font-size:14px;">✖ Zavrieť</button>
+    </div>
+    <div id="tttScore" style="text-align:center;font-weight:bold;margin-bottom:8px;">🏆 0 : 🤖 0 | 🤝 0</div>
+    <div id="tttStatus" style="text-align:center;margin:8px 0 12px;font-size:16px;">Na ťahu: <strong>X</strong></div>
+    <div id="tttGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <button class="tttCell" data-idx="0"></button>
+      <button class="tttCell" data-idx="1"></button>
+      <button class="tttCell" data-idx="2"></button>
+      <button class="tttCell" data-idx="3"></button>
+      <button class="tttCell" data-idx="4"></button>
+      <button class="tttCell" data-idx="5"></button>
+      <button class="tttCell" data-idx="6"></button>
+      <button class="tttCell" data-idx="7"></button>
+      <button class="tttCell" data-idx="8"></button>
+    </div>
+    <div id="tttActions" style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+      <button id="tttRestart" style="background:#374151;border:0;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;">Reštart</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #tttFab {
+    background: #6b7280;
+    color: #fff;
+    border: none;
+    border-radius: 9999px;
+    padding: 6px 10px;
+    font-size: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    opacity: 0.15;
+    transition: opacity 0.2s;
+  }
+  #tttFab:hover { opacity: 1; }
+  .tttCell {
+    aspect-ratio: 1;
+    background: #111827;
+    border: 2px solid #1f2937;
+    border-radius: 12px;
+    font-size: clamp(40px, 12vw, 64px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  .tttCell:active { filter: brightness(1.1); }
+</style>
+
+<script>
+(() => {
+  const tttFab = document.getElementById('tttFab');
+  const ttt = document.getElementById('tttContainer');
+  const closeBtn = document.getElementById('tttClose');
+  const cells = Array.from(document.querySelectorAll('.tttCell'));
+  const statusEl = document.getElementById('tttStatus');
+  const restartBtn = document.getElementById('tttRestart');
+  const scoreEl = document.getElementById('tttScore');
+
+  let board = Array(9).fill("");
+  let player = "X";
+  let over = false;
+  let playerScore = 0;
+  let aiScore = 0;
+  let drawScore = 0;
+
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function updateScore() {
+    scoreEl.textContent = `🏆 ${playerScore} : 🤖 ${aiScore} | 🤝 ${drawScore}`;
+  }
+
+  function setStatusTurn() {
+    statusEl.innerHTML = `Na ťahu: <strong>${player}</strong>`;
+  }
+
+  function setStatusWinner(w) {
+    statusEl.innerHTML = `Vyhral: <strong>${w}</strong>`;
+  }
+
+  function setStatusDraw() {
+    statusEl.textContent = 'Remíza';
+  }
+
+  function resetBoard() {
+    board.fill("");
+    cells.forEach(c => c.textContent = "");
+    player = "X";
+    over = false;
+    setStatusTurn();
+  }
+
+  function openTTT() {
+    resetBoard();
+    ttt.style.display = 'block';
+    ttt.setAttribute('aria-hidden', 'false');
+  }
+  function closeTTT() {
+    ttt.style.display = 'none';
+    ttt.setAttribute('aria-hidden', 'true');
+  }
+
+  function checkWinnerBoard(bd) {
+    for (const [a,b,c] of wins) {
+      if (bd[a] && bd[a] === bd[b] && bd[a] === bd[c]) {
+        return bd[a];
+      }
+    }
+    if (bd.every(v => v)) return "draw";
+    return null;
+  }
+
+  function playAt(idx) {
+    if (over || board[idx]) return;
+    board[idx] = player;
+    cells[idx].textContent = player;
+
+    let res = checkWinnerBoard(board);
+    if (res) {
+      over = true;
+      if (res === "X") playerScore++;
+      else if (res === "O") aiScore++;
+      else drawScore++;
+      updateScore();
+      if (res === "draw") setStatusDraw();
+      else setStatusWinner(res);
+      setTimeout(resetBoard, 1500);
+      return;
+    }
+
+    player = (player === "X") ? "O" : "X";
+    setStatusTurn();
+
+    if (player === "O") setTimeout(aiMove, 200);
+  }
+
+  const scores = { O: 1, X: -1, draw: 0 };
+
+  function minimax(bd, depth, isMaximizing) {
+    let res = checkWinnerBoard(bd);
+    if (res !== null) {
+      return scores[res];
+    }
+
+    if (isMaximizing) {
+      let bestScore = -Infinity;
+      for (let i = 0; i < bd.length; i++) {
+        if (bd[i] === "") {
+          bd[i] = "O";
+          let score = minimax(bd, depth + 1, false);
+          bd[i] = "";
+          bestScore = Math.max(score, bestScore);
+        }
+      }
+      return bestScore;
+    } else {
+      let bestScore = Infinity;
+      for (let i = 0; i < bd.length; i++) {
+        if (bd[i] === "") {
+          bd[i] = "X";
+          let score = minimax(bd, depth + 1, true);
+          bd[i] = "";
+          bestScore = Math.min(score, bestScore);
+        }
+      }
+      return bestScore;
+    }
+  }
+
+  function aiMove() {
+    if (over) return;
+    let bestScore = -Infinity;
+    let move;
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === "") {
+        board[i] = "O";
+        let score = minimax(board, 0, false);
+        board[i] = "";
+        if (score > bestScore) {
+          bestScore = score;
+          move = i;
+        }
+      }
+    }
+    if (move !== undefined) playAt(move);
+  }
+
+  // Events
+  tttFab.addEventListener('click', openTTT);
+  closeBtn.addEventListener('click', closeTTT);
+  restartBtn.addEventListener('click', resetBoard);
+  cells.forEach(btn => btn.addEventListener('click', () => {
+    if (player === "O") return;
+    playAt(parseInt(btn.dataset.idx, 10));
+  }));
+
+  updateScore();
+})();
+</script>
+
+</body>
+</html>
